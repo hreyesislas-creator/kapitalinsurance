@@ -143,7 +143,12 @@ function CountUp({ value }: { value: number }) {
 
   useEffect(() => {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) { setN(value); return; }
+    if (reduce) {
+      // Skip the animation but still land on the final value (next frame, so the
+      // state update happens in a callback rather than synchronously in the effect).
+      raf.current = requestAnimationFrame(() => setN(value));
+      return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+    }
     const duration = 900;
     let start: number | null = null;
     const tick = (t: number) => {

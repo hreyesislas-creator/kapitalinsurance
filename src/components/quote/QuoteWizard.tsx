@@ -28,6 +28,7 @@ type FormState = {
   email: string;
   phone: string;
   preferredContact: "phone" | "email" | "text";
+  notes: string;
   consent: boolean;
   company: string; // honeypot
 };
@@ -46,6 +47,7 @@ const initial: FormState = {
   email: "",
   phone: "",
   preferredContact: "phone",
+  notes: "",
   consent: false,
   company: "",
 };
@@ -150,6 +152,8 @@ export function QuoteWizard() {
   };
 
   const submit = async () => {
+    // Guard against duplicate submissions (double-click / re-entry).
+    if (status === "submitting" || status === "comparing" || status === "done") return;
     const e = validate();
     if (Object.keys(e).length) return setErrors(e);
     setErrors({});
@@ -171,6 +175,7 @@ export function QuoteWizard() {
           email: form.email,
           phone: form.phone,
           preferredContact: form.preferredContact,
+          notes: form.notes,
           consent: form.consent,
           company: form.company,
           source: "website-quote-wizard",
@@ -359,6 +364,19 @@ export function QuoteWizard() {
                 <Row label="Email" value={form.email} onEdit={() => goTo(6)} />
                 <Row label="Phone" value={form.phone} onEdit={() => goTo(6)} />
               </dl>
+
+              <div className="mt-5">
+                <Label>Anything else we should know? (optional)</Label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) => set({ notes: e.target.value.slice(0, 2000) })}
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="Add any details that would help us prepare your quote."
+                  aria-label="Additional notes"
+                  className="mt-1.5 w-full resize-y rounded-xl border border-ink-200 px-4 py-3 text-ink-900 outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
+                />
+              </div>
 
               <label className={cn("mt-5 flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm text-ink-600 transition-colors", errors.consent ? "border-accent-300 bg-accent-50/50" : "border-transparent")}>
                 <input type="checkbox" checked={form.consent} onChange={(e) => { set({ consent: e.target.checked }); clearError("consent"); }} className="mt-0.5 h-5 w-5 flex-shrink-0 rounded border-ink-300 text-brand-700 focus:ring-brand-600" />
@@ -574,7 +592,7 @@ function Spinner() {
   );
 }
 
-function SuccessScreen({ name, type }: { name: string; type: string }) {
+function SuccessScreen({ name }: { name: string; type: string }) {
   return (
     <div className="mx-auto max-w-xl rounded-3xl border border-ink-100 bg-white p-8 text-center shadow-card [animation:scale-in_0.5s_var(--ease-out-soft)_both] sm:p-10">
       <div className="relative mx-auto grid h-20 w-20 place-items-center">
@@ -586,25 +604,33 @@ function SuccessScreen({ name, type }: { name: string; type: string }) {
           </svg>
         </span>
       </div>
-      <h2 className="mt-5 text-2xl font-bold text-ink-900">Your quote request was received{name ? `, ${name}` : ""}!</h2>
-      <p className="mx-auto mt-3 max-w-md text-ink-600">
-        Jenisffer or the Kapital Insurance team will review your {type.toLowerCase()} options and
-        contact you shortly with your personalized quote. For immediate help, call{" "}
-        <a href={site.phone.href} className="font-semibold text-brand-700 hover:text-brand-900">{site.phone.display}</a>.
+
+      <h2 className="mt-5 text-3xl font-extrabold text-ink-900">Thank you{name ? `, ${name}` : ""}!</h2>
+      <p className="mx-auto mt-3 max-w-md text-lg text-ink-700">
+        Your quote request has been received.
+      </p>
+      <p className="mx-auto mt-2 max-w-md text-ink-600">
+        {site.agent.name} or a member of our team will contact you shortly.
       </p>
 
       <div className="mx-auto mt-6 flex max-w-sm items-center justify-center gap-3 rounded-2xl bg-brand-50 px-4 py-3 text-sm font-medium text-brand-800">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-700" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" strokeLinecap="round" /></svg>
-        Most quote requests are reviewed within one business hour.
+        Most requests are reviewed within one business hour during business hours.
       </div>
 
       <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <a href={site.phone.href} className="shine inline-flex min-h-[3rem] items-center rounded-full bg-accent-600 px-6 font-semibold text-white shadow-[var(--shadow-cta)] transition-colors hover:bg-accent-700">
-          Call Jenisffer: {site.phone.display}
-        </a>
-        <Link href="/learn" className="inline-flex min-h-[3rem] items-center rounded-full px-6 font-semibold text-brand-700 hover:text-brand-900">
-          Explore the Learning Center →
+        <Link
+          href="/"
+          className="inline-flex min-h-[3rem] items-center justify-center rounded-full bg-brand-800 px-6 font-semibold text-white shadow-soft transition-all hover:-translate-y-0.5 hover:bg-brand-900 hover:shadow-card"
+        >
+          Return Home
         </Link>
+        <a
+          href={site.phone.href}
+          className="shine inline-flex min-h-[3rem] items-center justify-center rounded-full bg-accent-600 px-6 font-semibold text-white shadow-[var(--shadow-cta)] transition-colors hover:bg-accent-700"
+        >
+          Call Now: {site.phone.display}
+        </a>
       </div>
     </div>
   );

@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { leadSchema } from "@/lib/leads";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { notifyNewLead } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 
+/** Window for treating an identical resubmission as a duplicate (double-click / retry). */
+const DEDUPE_WINDOW_MS = 2 * 60 * 1000;
+
 /**
- * Quote Wizard submission endpoint.
- * Flow: validate → store in Supabase → notify (email + SMS) → respond.
- * Each stage degrades gracefully so a single failure never loses the lead.
+ * Quote Wizard submission endpoint (V1 lead workflow).
+ * Flow: validate + sanitize → de-dupe → store in Supabase → email agent +
+ * customer → respond. Every stage degrades gracefully so a single failure
+ * never loses the lead, and the customer always reaches the success screen.
  */
 export async function POST(request: Request) {
   let body: unknown;
@@ -33,10 +38,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  let leadId: string | undefined;
   const supabase = getSupabaseAdmin();
+  const createdAt = new Date();
+  let leadId: string | undefined;
 
   if (supabase) {
+    // Prevent duplicate submissions: same email + coverage within the window.
+    const since = new Date(Date.now() - DEDUPE_WINDOW_MS).toISOString();
+    const { data: recent } = await supabase
+      .from("leads")
+      .select("id")
+      .eq("email", lead.email)
+      .eq("insurance_type", lead.insuranceType)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recent?.id) {
+      // Already captured moments ago — acknowledge without re-storing or re-emailing.
+      return NextResponse.json({ ok: true, id: recent.id as string, duplicate: true });
+    }
+
     const { data, error } = await supabase
       .from("leads")
       .insert({
@@ -52,6 +75,7 @@ export async function POST(request: Request) {
         email: lead.email,
         phone: lead.phone,
         preferred_contact: lead.preferredContact,
+        notes: lead.notes || null,
         consent: lead.consent,
         source: lead.source,
         status: "new",
@@ -60,7 +84,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      // Don't lose the lead — log it so it can be recovered from server logs.
+      // Don't lose the lead — log full payload so it can be recovered from logs.
       console.error("[quote] supabase insert failed:", error.message, lead);
     } else {
       leadId = data?.id as string | undefined;
@@ -75,8 +99,16 @@ export async function POST(request: Request) {
     });
   }
 
-  // Notifications run after storage but never block the success response.
-  await notifyNewLead(lead, leadId);
+  // A stable Quote ID for the emails even if storage was unavailable.
+  const quoteId = leadId ?? randomUUID();
 
-  return NextResponse.json({ ok: true, id: leadId });
+  // Emails run after storage but never block (or fail) the success response.
+  const notify = await notifyNewLead(lead, { quoteId, createdAt });
+  if (!notify.agentEmailSent || !notify.customerEmailSent) {
+    console.warn(
+      `[quote] email partial/failed for ${quoteId} — agent:${notify.agentEmailSent} customer:${notify.customerEmailSent} (lead is saved)`,
+    );
+  }
+
+  return NextResponse.json({ ok: true, id: quoteId });
 }

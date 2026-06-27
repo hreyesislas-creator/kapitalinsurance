@@ -1,87 +1,104 @@
 import type { Lead } from "./leads";
-import { site } from "./site";
+import { buildAgentEmail, buildCustomerEmail } from "./emailTemplates";
 
 /**
- * Notification layer for new leads — email + SMS.
+ * V1 lead notifications — email only, via Resend.
  *
- * This is intentionally provider-agnostic and degrades gracefully: if no
- * provider keys are configured, it logs the intent and returns. Wire up the
- * provider of choice by filling in the marked sections.
+ *   1. Professional new-lead alert  → QUOTE_NOTIFICATION_EMAIL (the agency)
+ *   2. Branded confirmation         → the customer's own email
  *
- *   Email  → Resend (RESEND_API_KEY) — recommended on Vercel
- *   SMS    → Twilio (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM)
+ * Everything degrades gracefully: a missing key or a failed send is logged and
+ * swallowed so the lead is NEVER lost and the customer always sees success.
  *
- * Designed to run from the /api/quote route after a lead is stored.
+ * Required env:
+ *   RESEND_API_KEY            Resend API key
+ *   FROM_EMAIL                verified sender, e.g. "Kapital Insurance <quotes@domain.com>"
+ *   QUOTE_NOTIFICATION_EMAIL  inbox that receives new-lead alerts
  */
 
-const NOTIFY_EMAIL = process.env.LEAD_NOTIFY_EMAIL || site.email;
-const NOTIFY_SMS = process.env.LEAD_NOTIFY_SMS || site.phone.e164;
+export type NotifyMeta = { quoteId: string; createdAt: Date };
+export type NotifyResult = { agentEmailSent: boolean; customerEmailSent: boolean };
 
-export async function notifyNewLead(lead: Lead, id?: string) {
-  // Fire both; never let a notification failure break the lead response.
-  await Promise.allSettled([sendLeadEmail(lead, id), sendLeadSms(lead, id)]);
+const RESEND_ENDPOINT = "https://api.resend.com/emails";
+
+export async function notifyNewLead(lead: Lead, meta: NotifyMeta): Promise<NotifyResult> {
+  const [agent, customer] = await Promise.allSettled([
+    sendAgentEmail(lead, meta),
+    sendCustomerEmail(lead, meta),
+  ]);
+
+  return {
+    agentEmailSent: agent.status === "fulfilled" && agent.value,
+    customerEmailSent: customer.status === "fulfilled" && customer.value,
+  };
 }
 
-function leadSummary(lead: Lead) {
-  return [
-    `New ${lead.insuranceType} lead`,
-    `Name: ${lead.firstName} ${lead.lastName}`,
-    `Phone: ${lead.phone}`,
-    `Email: ${lead.email}`,
-    `ZIP: ${lead.zip}`,
-    lead.currentlyInsured ? `Insured: ${lead.currentlyInsured}` : "",
-    lead.currentPremium ? `Current premium: ${lead.currentPremium}` : "",
-    `Preferred contact: ${lead.preferredContact}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+async function sendAgentEmail(lead: Lead, meta: NotifyMeta): Promise<boolean> {
+  const to = process.env.QUOTE_NOTIFICATION_EMAIL;
+  if (!to) {
+    console.warn("[lead:agent-email] QUOTE_NOTIFICATION_EMAIL not set — skipping agent alert.");
+    return false;
+  }
+  const { subject, html, text } = buildAgentEmail(lead, meta);
+  return sendEmail({ to, subject, html, text, replyTo: lead.email, tag: "agent" });
 }
 
-async function sendLeadEmail(lead: Lead, id?: string) {
+async function sendCustomerEmail(lead: Lead, meta: NotifyMeta): Promise<boolean> {
+  const { subject, html, text } = buildCustomerEmail(lead, meta);
+  return sendEmail({
+    to: lead.email,
+    subject,
+    html,
+    text,
+    // Replies from the customer go to the agency inbox when configured.
+    replyTo: process.env.QUOTE_NOTIFICATION_EMAIL,
+    tag: "customer",
+  });
+}
+
+async function sendEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+  tag: string;
+}): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
-  const summary = leadSummary(lead);
+  const from = process.env.FROM_EMAIL;
 
-  if (!apiKey) {
-    console.info(`[lead:email] (not configured) would notify ${NOTIFY_EMAIL}\n${summary}`);
-    return;
+  if (!apiKey || !from) {
+    console.warn(
+      `[lead:${opts.tag}-email] Email not configured (RESEND_API_KEY / FROM_EMAIL missing) — skipped send to ${opts.to}.`,
+    );
+    return false;
   }
 
-  // Resend REST API — no SDK dependency required.
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM || `Kapital Leads <leads@kapitalinsurancegroup.com>`,
-      to: [NOTIFY_EMAIL],
-      reply_to: lead.email,
-      subject: `🔔 New ${lead.insuranceType} quote — ${lead.firstName} ${lead.lastName}`,
-      text: `${summary}\n\nLead ID: ${id ?? "n/a"}`,
-    }),
-  }).catch((e) => console.error("[lead:email] failed", e));
-}
+  try {
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [opts.to],
+        subject: opts.subject,
+        html: opts.html,
+        text: opts.text,
+        ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+      }),
+    });
 
-async function sendLeadSms(lead: Lead, id?: string) {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_FROM;
-
-  if (!sid || !token || !from) {
-    console.info(`[lead:sms] (not configured) would text ${NOTIFY_SMS} about lead ${id ?? ""}`);
-    return;
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error(`[lead:${opts.tag}-email] Resend responded ${res.status}: ${detail}`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`[lead:${opts.tag}-email] send failed:`, err);
+    return false;
   }
-
-  const body = `New ${lead.insuranceType} quote: ${lead.firstName} ${lead.lastName}, ${lead.phone}, ZIP ${lead.zip}`;
-  const params = new URLSearchParams({ To: NOTIFY_SMS, From: from, Body: body });
-
-  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: params.toString(),
-  }).catch((e) => console.error("[lead:sms] failed", e));
 }

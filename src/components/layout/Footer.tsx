@@ -5,6 +5,7 @@ import { cities } from "@/data/locations";
 import { articlesByDate } from "@/data/articles";
 import { Logo } from "@/components/ui/Logo";
 import { StarRating } from "@/components/ui/StarRating";
+import { VisitOffice } from "@/components/sections/VisitOffice";
 
 export function Footer() {
   const year = 2026;
@@ -137,21 +138,8 @@ export function Footer() {
           </nav>
         </div>
 
-        {/* Map placeholder (drop a Google Maps embed iframe here later) */}
-        <div className="lg:col-span-12">
-          <div className="relative grid h-44 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-            <div aria-hidden className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.25)_1px,transparent_1px)] [background-size:32px_32px]" />
-            <div className="relative text-center">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="mx-auto text-brand-200" aria-hidden>
-                <path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10Z" /><circle cx="12" cy="11" r="2" />
-              </svg>
-              <p className="mt-2 text-sm font-semibold text-white">Serving Hialeah &amp; South Florida</p>
-              <p className="text-xs text-brand-100/70">
-                {site.address.city}, {site.address.region} {site.address.postalCode} · Google Map embed goes here
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Visit Our Office — premium location section (live map embed swaps in here later) */}
+        <VisitOffice />
       </div>
 
       <div className="border-t border-white/10">
