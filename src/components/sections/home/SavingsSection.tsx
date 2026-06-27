@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { site } from "@/lib/site";
-import { SavingsAnimation } from "./SavingsAnimation";
+import { SavingsVisual } from "./SavingsVisual";
 
 const HIGHLIGHTS = [
   "Bundle home + auto and save on both",
@@ -52,7 +52,7 @@ export function SavingsSection() {
           </p>
         </div>
 
-        <SavingsAnimation />
+        <SavingsVisual />
       </div>
     </section>
   );
