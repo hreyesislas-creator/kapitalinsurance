@@ -1,26 +1,207 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  Kapital Insurance Group — Design System
+  Premium U.S. insurance agency aesthetic.
+  Brand: UniVista Blue. Red reserved exclusively for CTAs.
+*/
+
+@theme {
+  /* Brand — UniVista Blue scale */
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #d9e6ff;
+  --color-brand-200: #bcd3ff;
+  --color-brand-300: #8eb6ff;
+  --color-brand-400: #598dff;
+  --color-brand-500: #3366f5;
+  --color-brand-600: #1d47e0;
+  --color-brand-700: #1736c4;
+  --color-brand-800: #0a3d91; /* primary brand blue */
+  --color-brand-900: #0b306f;
+  --color-brand-950: #061d45;
+
+  /* Accent — CTA Red (use ONLY for calls-to-action) */
+  --color-accent-50: #fff1f2;
+  --color-accent-100: #ffe0e3;
+  --color-accent-200: #ffc6cd;
+  --color-accent-300: #ff9da9;
+  --color-accent-400: #ff6376;
+  --color-accent-500: #f5334d;
+  --color-accent-600: #e01933;
+  --color-accent-700: #bd0f26;
+  --color-accent-800: #9c1023;
+  --color-accent-900: #821322;
+
+  /* Ink / neutrals — warm slate (tuned for AA contrast) */
+  --color-ink-50: #f7f8fa;
+  --color-ink-100: #eef1f5;
+  --color-ink-200: #dde3ea;
+  --color-ink-300: #b9c3cf;
+  --color-ink-400: #8492a3;
+  --color-ink-500: #5d6a7a;
+  --color-ink-600: #45505e;
+  --color-ink-700: #333c47;
+  --color-ink-800: #232b35;
+  --color-ink-900: #131820;
+
+  --color-background: #ffffff;
+  --color-foreground: var(--color-ink-900);
+
+  /* Typography */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-inter), ui-sans-serif, sans-serif;
+
+  /* Radii — soft, rounded cards */
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  /* Soft, multi-layered shadows — restrained, "expensive" depth (Apple/Stripe-grade) */
+  --shadow-soft: 0 1px 2px rgba(16, 24, 40, 0.04), 0 3px 8px -3px rgba(16, 24, 40, 0.06);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 5px 14px -5px rgba(16, 24, 40, 0.07),
+    0 12px 26px -12px rgba(10, 61, 145, 0.1);
+  --shadow-lift: 0 1px 3px rgba(16, 24, 40, 0.05), 0 8px 20px -8px rgba(16, 24, 40, 0.08),
+    0 22px 44px -18px rgba(10, 61, 145, 0.14);
+  --shadow-cta: 0 2px 6px -2px rgba(224, 25, 51, 0.28), 0 8px 20px -6px rgba(224, 25, 51, 0.32);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* --------------------------------- Keyframes -------------------------------- */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes aurora {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(4%, -3%, 0) scale(1.08); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes shimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+@keyframes draw-check {
+  from { stroke-dashoffset: 28; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes pop-ring {
+  0% { transform: scale(0.4); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+
+  p { text-wrap: pretty; }
+
+  ::selection { background: var(--color-brand-800); color: #fff; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Refined scrollbar (desktop) */
+  @media (pointer: fine) {
+    * { scrollbar-width: thin; scrollbar-color: var(--color-ink-200) transparent; }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 640px) { .container-page { padding-inline: 1.75rem; } }
+  @media (min-width: 1024px) { .container-page { padding-inline: 2rem; } }
+
+  /* Scroll-reveal — zero JS. Only hides content where scroll-timeline is
+     supported, so non-supporting browsers always show content (no FOUC trap). */
+  @supports (animation-timeline: view()) {
+    .reveal {
+      opacity: 0;
+      animation: fade-up 0.8s var(--ease-out-soft) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+  }
+
+  /* Staggered children for grids */
+  .stagger > * { --d: 0ms; }
+  @supports (animation-timeline: view()) {
+    .stagger > *:nth-child(2) { animation-delay: 60ms; }
+    .stagger > *:nth-child(3) { animation-delay: 120ms; }
+    .stagger > *:nth-child(4) { animation-delay: 180ms; }
+  }
+
+  /* Premium card hover */
+  .card-hover {
+    transition: transform 0.35s var(--ease-out-soft), box-shadow 0.35s var(--ease-out-soft),
+      border-color 0.35s var(--ease-out-soft);
+  }
+  .card-hover:hover { transform: translateY(-4px); }
+
+  /* Shine sweep used on hero / primary CTAs.
+     Uses an animated background-position (clipped to the element's own box via
+     border-radius: inherit) so it never needs overflow:hidden — preserving the
+     CTA drop shadows. pointer-events:none keeps clicks passing through. */
+  .shine { position: relative; }
+  .shine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.3) 50%, transparent 65%);
+    background-size: 250% 100%;
+    background-position: 150% 0;
+  }
+  .shine:hover::after { animation: shimmer 0.85s ease; }
+
+  .text-gradient {
+    background: linear-gradient(120deg, var(--color-brand-700), var(--color-brand-500));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { animation: none !important; opacity: 1 !important; }
 }
