@@ -254,7 +254,7 @@ export function QuoteWizard() {
                 value={form.zip}
                 onChange={(e) => { set({ zip: e.target.value.replace(/\D/g, "").slice(0, 5) }); clearError("zip"); }}
                 onKeyDown={(e) => e.key === "Enter" && next()}
-                placeholder="33012"
+                placeholder="33016"
                 className={cn(
                   "w-full max-w-xs rounded-2xl border px-5 py-4 text-2xl font-bold tracking-[0.3em] text-ink-900 outline-none transition focus:ring-2",
                   errors.zip ? "border-accent-400 focus:border-accent-500 focus:ring-accent-500/20" : "border-ink-200 focus:border-brand-600 focus:ring-brand-600/20",

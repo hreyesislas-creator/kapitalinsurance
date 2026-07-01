@@ -81,7 +81,7 @@ export function OverpayingCalculator() {
                   maxLength={5}
                   value={zip}
                   onChange={(e) => { setZip(e.target.value.replace(/\D/g, "").slice(0, 5)); setError(""); }}
-                  placeholder="33012"
+                  placeholder="33016"
                   aria-label="ZIP code"
                   className="mt-1.5 w-full rounded-xl border border-ink-200 px-4 py-3 font-semibold tracking-wider text-ink-900 outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
                 />

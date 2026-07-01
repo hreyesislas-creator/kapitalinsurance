@@ -3,16 +3,14 @@ import { Button } from "@/components/ui/Button";
 import { site } from "@/lib/site";
 
 /**
- * Premium "Visit Our Office" section. Left = office photo / live-map slot,
- * right = an elegant location card (address, hours, phone, areas served, CTAs).
+ * Premium "Visit Our Office" section. Left = live Google Map, right = an elegant
+ * location card (address, hours, phone, areas served, CTAs).
  *
  * SWAP-IN (no layout change required):
- *  - To show a live Google Map, set MAP_EMBED_SRC to a Google Maps embed URL.
- *  - To show a real office photo, set OFFICE_IMAGE to a local path in /public.
- * Otherwise a premium branded map-style placeholder renders. All three fill the
- * exact same framed area, so swapping never shifts the layout.
+ *  - To show a real office photo instead of the map, set OFFICE_IMAGE to a local
+ *    path in /public. Both fill the exact same framed area, so swapping never
+ *    shifts the layout.
  */
-const MAP_EMBED_SRC: string | null = null;
 const OFFICE_IMAGE: string | null = null;
 
 const HOURS = [
@@ -33,9 +31,10 @@ const SERVING = [
 
 export function VisitOffice() {
   const fullAddress = `${site.address.street}, ${site.address.city}, ${site.address.region} ${site.address.postalCode}`;
-  const directionsHref = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-    `${site.name}, ${fullAddress}`,
-  )}`;
+  const mapQuery = encodeURIComponent(`${site.name}, ${fullAddress}`);
+  const directionsHref = `https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`;
+  // No-API-key Google Maps embed centered on the office address.
+  const mapEmbedSrc = `https://www.google.com/maps?q=${mapQuery}&z=15&output=embed`;
 
   return (
     <section className="lg:col-span-12">
@@ -44,17 +43,9 @@ export function VisitOffice() {
       </p>
 
       <div className="grid items-stretch gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        {/* Left — office photo / live map slot */}
-        <div className="relative min-h-[20rem] overflow-hidden rounded-3xl ring-1 ring-white/10 shadow-lift lg:min-h-[26rem]">
-          {MAP_EMBED_SRC ? (
-            <iframe
-              src={MAP_EMBED_SRC}
-              title={`Map to ${site.name} in ${site.address.city}, ${site.address.region}`}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="absolute inset-0 h-full w-full border-0"
-            />
-          ) : OFFICE_IMAGE ? (
+        {/* Left — live Google Map (or office photo when OFFICE_IMAGE is set) */}
+        <div className="relative min-h-[20rem] overflow-hidden rounded-3xl bg-brand-950 ring-1 ring-white/10 shadow-lift lg:min-h-[26rem]">
+          {OFFICE_IMAGE ? (
             <Image
               src={OFFICE_IMAGE}
               alt={`${site.name} office in ${site.address.city}, ${site.address.region}`}
@@ -63,7 +54,14 @@ export function VisitOffice() {
               className="object-cover"
             />
           ) : (
-            <OfficePlaceholder city={site.address.city} />
+            <iframe
+              src={mapEmbedSrc}
+              title={`Map to ${site.name} at ${fullAddress}`}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full border-0"
+            />
           )}
         </div>
 
@@ -152,39 +150,5 @@ export function VisitOffice() {
         </div>
       </div>
     </section>
-  );
-}
-
-/**
- * Premium branded map-style placeholder — stylized streets, a route line, and a
- * pin marker over a deep-navy field. Looks intentional (never empty) and is
- * replaced wholesale the moment a real map embed or office photo is provided.
- */
-function OfficePlaceholder({ city }: { city: string }) {
-  return (
-    <div className="absolute inset-0 bg-gradient-to-br from-brand-800 via-brand-900 to-brand-950" role="img" aria-label={`Map of our ${city} office area`}>
-      {/* street grid */}
-      <div aria-hidden className="absolute inset-0 opacity-[0.16] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:46px_46px]" />
-      <div aria-hidden className="absolute inset-0 opacity-[0.10] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:23px_23px]" />
-      {/* glow */}
-      <div aria-hidden className="absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-400/20 blur-3xl" />
-
-      {/* route line */}
-      <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" fill="none" aria-hidden>
-        <path d="M20 250 C 120 220, 140 120, 230 110 S 360 70, 388 40" stroke="rgba(255,255,255,0.35)" strokeWidth="4" strokeLinecap="round" strokeDasharray="2 12" />
-      </svg>
-
-      {/* pin marker */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-        <span className="relative mx-auto grid h-14 w-14 place-items-center rounded-full bg-white text-brand-800 shadow-lift">
-          <span aria-hidden className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/60 opacity-60" />
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" className="relative" aria-hidden>
-            <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
-          </svg>
-        </span>
-        <p className="mt-3 text-sm font-bold text-white">Visit our {city} office</p>
-        <p className="text-xs text-brand-100/70">Map coming soon</p>
-      </div>
-    </div>
   );
 }

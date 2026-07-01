@@ -28,7 +28,7 @@ export const site = {
     city: "Hialeah",
     region: "FL",
     regionName: "Florida",
-    postalCode: "33012",
+    postalCode: "33016",
     country: "US",
     countryName: "United States",
   },
