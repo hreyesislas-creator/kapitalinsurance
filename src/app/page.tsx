@@ -29,7 +29,7 @@ export default function HomePage() {
       <OverpayingCalculator />
       <SavingsSection />
       <WhyDriversSwitch />
-      <Reviews tone="muted" />
+      <Reviews tone="muted" withSchema />
       <CitiesServed />
       <LearningPreview />
       <FaqSection faqs={homeFaqs} tone="default" />

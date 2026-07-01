@@ -77,14 +77,13 @@ export function organizationSchema() {
     name: site.name,
     legalName: site.legalName,
     url: site.url,
-    logo: absUrl("/logo.png"),
+    logo: { "@type": "ImageObject", url: absUrl("/logo.png"), width: 1493, height: 395 },
     image: absUrl("/logo.png"),
     description: site.description,
     telephone: site.phone.e164,
     email: site.email,
     address: postalAddress(),
     areaServed: "Miami-Dade County, Florida",
-    sameAs: [site.social.facebook, site.social.instagram],
     parentOrganization: {
       "@type": "Organization",
       name: site.franchiseOf,
@@ -130,7 +129,6 @@ export function insuranceAgencySchema() {
       worstRating: 1,
     },
     founder: { "@type": "Person", name: site.agent.name, jobTitle: site.agent.role },
-    sameAs: [site.social.facebook, site.social.instagram],
   };
 }
 
@@ -226,16 +224,14 @@ export function articleSchema(opts: {
 export function reviewSchema(
   reviews: { author: string; rating: number; body: string; date: string }[]
 ) {
+  // Attaches individual reviews to the single LocalBusiness node (same @id) that
+  // already carries the aggregateRating in the sitewide layout schema. No
+  // aggregateRating here — it must be emitted exactly once per page.
   return {
     "@context": "https://schema.org",
     "@type": "InsuranceAgency",
     "@id": LOCALBUSINESS_ID,
     name: site.name,
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: site.rating.value,
-      reviewCount: site.rating.count,
-    },
     review: reviews.map((r) => ({
       "@type": "Review",
       author: { "@type": "Person", name: r.author },

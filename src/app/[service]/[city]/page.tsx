@@ -137,6 +137,9 @@ export default async function LocalServicePage({
               </a>{" "}
               and we&apos;ll compare the market for you in minutes.
             </p>
+            {city.localContext.map((paragraph, i) => (
+              <p key={`local-${i}`}>{paragraph}</p>
+            ))}
           </div>
 
           <aside className="lg:pl-4">

@@ -34,10 +34,8 @@ export const metadata: Metadata = {
   publisher: site.name,
   formatDetection: { telephone: true, address: true, email: true },
   alternates: { canonical: "/" },
-  icons: {
-    icon: [{ url: "/favicon.ico" }, { url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/apple-icon.png" }],
-  },
+  // Icons are generated from the file conventions in /app: favicon.ico, icon.svg,
+  // and apple-icon.tsx. Next injects the correct <link> tags automatically.
   openGraph: {
     type: "website",
     siteName: site.name,

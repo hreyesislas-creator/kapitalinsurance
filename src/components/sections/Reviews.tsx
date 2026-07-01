@@ -9,15 +9,22 @@ import { site } from "@/lib/site";
 export function Reviews({
   tone = "default",
   limit = 6,
+  withSchema = false,
 }: {
   tone?: "default" | "muted";
   limit?: number;
+  /**
+   * Emit Review structured data. Only enable on pages where Google expects
+   * review markup (home, About, a dedicated reviews page) — never on every
+   * service/city page, where sitewide self-serving ratings risk being ignored.
+   */
+  withSchema?: boolean;
 }) {
   const items = testimonials.slice(0, limit);
 
   return (
     <Section tone={tone}>
-      <JsonLd data={reviewSchema(reviewsForSchema)} />
+      {withSchema && <JsonLd data={reviewSchema(reviewsForSchema)} />}
       <SectionHeading
         eyebrow="Loved by South Florida"
         title="Hundreds of neighbors, one trusted advisor"

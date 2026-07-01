@@ -90,7 +90,7 @@ export default function AboutPage() {
         </div>
       </Section>
 
-      <Reviews tone="default" limit={6} />
+      <Reviews tone="default" limit={6} withSchema />
       <CtaBand />
     </>
   );
